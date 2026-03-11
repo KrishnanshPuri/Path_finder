@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0f172a; /* Deep slate dark mode */
+  color: white;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Custom Glowing Animation for React Flow Edges */
+.glowing-edge {
+  stroke: #10b981 !important; /* Vibrant Emerald Green */
+  stroke-width: 4px !important;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
+  transition: all 0.5s ease-in-out;
+  animation: dashdraw 1s linear forwards, glowPulse 2s infinite alternate;
+}
+
+.faded-edge {
+  stroke: #334155 !important;
+  stroke-width: 2px !important;
+  opacity: 0.3;
+  transition: all 0.5s ease;
+}
+
+@keyframes dashdraw {
+  from { stroke-dasharray: 100%; stroke-dashoffset: 100%; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes glowPulse {
+  0% { filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.5)); }
+  100% { filter: drop-shadow(0 0 15px rgba(16, 185, 129, 1)); }
+}
+/* Fix React Flow Controls Visibility */
+.react-flow__controls {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+}
+.react-flow__controls-button {
+  background-color: #1e293b !important;
+  border-bottom: 1px solid #334155 !important;
+}
+.react-flow__controls-button svg {
+  fill: #10b981 !important; /* Emerald Green Icons */
+}
+.react-flow__controls-button:hover {
+  background-color: #334155 !important;
+}
