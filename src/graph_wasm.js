@@ -1,17 +1,11 @@
-// This code implements the `-sMODULARIZE` settings by taking the generated
-// JS program code (INNER_JS_CODE) and wrapping it in a factory function.
 
-// When targeting node and ES6 we use `await import ..` in the generated code
-// so the outer function needs to be marked as async.
 async function createModule(moduleArg = {}) {
   var moduleRtn;
 
-// include: shell.js
-// include: minimum_runtime_check.js
 (function() {
-  // "30.0.0" -> 300000
+  
   function humanReadableVersionToPacked(str) {
-    str = str.split('-')[0]; // Remove any trailing part from e.g. "12.53.3-alpha"
+    str = str.split('-')[0]; 
     var vers = str.split('.').slice(0, 3);
     while(vers.length < 3) vers.push('00');
     vers = vers.map((n, i, arr) => n.padStart(2, '0'));
@@ -22,8 +16,7 @@ async function createModule(moduleArg = {}) {
 
   var TARGET_NOT_SUPPORTED = 2147483647;
 
-  // Note: We use a typeof check here instead of optional chaining using
-  // globalThis because older browsers might not have globalThis defined.
+  
   var currentNodeVersion = typeof process !== 'undefined' && process.versions?.node ? humanReadableVersionToPacked(process.versions.node) : TARGET_NOT_SUPPORTED;
   if (currentNodeVersion < 160000) {
     throw new Error(`This emscripten-generated code requires node v${ packedVersionToHumanReadable(160000) } (detected v${packedVersionToHumanReadable(currentNodeVersion)})`);
@@ -50,44 +43,25 @@ async function createModule(moduleArg = {}) {
   }
 })();
 
-// end include: minimum_runtime_check.js
-// The Module object: Our interface to the outside world. We import
-// and export values on it. There are various ways Module can be used:
-// 1. Not defined. We create it here
-// 2. A function parameter, function(moduleArg) => Promise<Module>
-// 3. pre-run appended it, var Module = {}; ..generated code..
-// 4. External script tag defines var Module.
-// We need to check if Module already exists (e.g. case 3 above).
-// Substitution will be replaced with actual code on later stage of the build,
-// this way Closure Compiler will not mangle it (e.g. case 4. above).
-// Note that if you want to run closure, and also to use Module
-// after the generated code, you will need to define   var Module = {};
-// before the code. Then that object will be used in the code, and you
-// can continue to use Module afterwards as well.
 var Module = moduleArg;
 
-// Determine the runtime environment we are in. You can customize this by
-// setting the ENVIRONMENT setting at compile time (see settings.js).
 
-// Attempt to auto-detect the environment
+
+
 var ENVIRONMENT_IS_WEB = !!globalThis.window;
 var ENVIRONMENT_IS_WORKER = !!globalThis.WorkerGlobalScope;
-// N.b. Electron.js environment is simultaneously a NODE-environment, but
-// also a web environment.
+
 var ENVIRONMENT_IS_NODE = globalThis.process?.versions?.node && globalThis.process?.type != 'renderer';
 var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
 
 if (ENVIRONMENT_IS_NODE) {
-  // When building an ES module `require` is not normally available.
-  // We need to use `createRequire()` to construct the require()` function.
+  
   const { createRequire } = await import('node:module');
   /** @suppress{duplicate} */
   var require = createRequire(import.meta.url);
 
 }
 
-// --pre-jses are emitted after the Module integration code, so that they can
-// refer to Module (if they choose; they can also define Module)
 
 
 var arguments_ = [];
@@ -98,7 +72,7 @@ var quit_ = (status, toThrow) => {
 
 var _scriptName = import.meta.url;
 
-// `/` should be present at the end if `scriptDirectory` is not empty
+
 var scriptDirectory = '';
 function locateFile(path) {
   if (Module['locateFile']) {
@@ -107,7 +81,7 @@ function locateFile(path) {
   return scriptDirectory + path;
 }
 
-// Hooks that are implemented differently in different runtime environments.
+
 var readAsync, readBinary;
 
 if (ENVIRONMENT_IS_NODE) {
@@ -155,15 +129,12 @@ if (ENVIRONMENT_IS_SHELL) {
 
 } else
 
-// Note that this includes Node.js workers when relevant (pthreads is enabled).
-// Node.js workers are detected as a combination of ENVIRONMENT_IS_WORKER and
-// ENVIRONMENT_IS_NODE.
+
 if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   try {
     scriptDirectory = new URL('.', _scriptName).href; // includes trailing slash
   } catch {
-    // Must be a `blob:` or `data:` URL (e.g. `blob:http://site.com/etc/etc`), we cannot
-    // infer anything from them.
+   
   }
 
   if (!(globalThis.window || globalThis.WorkerGlobalScope)) throw new Error('not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)');
@@ -181,10 +152,7 @@ if (ENVIRONMENT_IS_WORKER) {
   }
 
   readAsync = async (url) => {
-    // Fetch has some additional restrictions over XHR, like it can't be used on a file:// url.
-    // See https://github.com/github/fetch/pull/92#issuecomment-140665932
-    // Cordova or Electron apps are typically loaded from a file:// url.
-    // So use XHR on webview if URL is a file URL.
+    
     if (isFileURI(url)) {
       return new Promise((resolve, reject) => {
         var xhr = new XMLHttpRequest();
@@ -226,24 +194,10 @@ var JSFILEFS = 'JSFILEFS is no longer included by default; build with -ljsfilefs
 var OPFS = 'OPFS is no longer included by default; build with -lopfs.js';
 
 var NODEFS = 'NODEFS is no longer included by default; build with -lnodefs.js';
-
-// perform assertions in shell.js after we set up out() and err(), as otherwise
-// if an assertion fails it cannot print the message
+// Leave it 
 
 assert(!ENVIRONMENT_IS_SHELL, 'shell environment detected but not enabled at build time.  Add `shell` to `-sENVIRONMENT` to enable.');
 
-// end include: shell.js
-
-// include: preamble.js
-// === Preamble library stuff ===
-
-// Documentation for the public APIs defined in this file must be updated in:
-//    site/source/docs/api_reference/preamble.js.rst
-// A prebuilt local version of the documentation is available at:
-//    site/build/text/docs/api_reference/preamble.js.txt
-// You can also build docs locally as HTML or other formats in site/
-// An online HTML version (which may be of a different version of Emscripten)
-//    is up at http://kripken.github.io/emscripten-site/docs/api_reference/preamble.js.html
 
 var wasmBinary;
 
@@ -251,34 +205,19 @@ if (!globalThis.WebAssembly) {
   err('no native wasm support detected');
 }
 
-// Wasm globals
 
-//========================================
-// Runtime essentials
-//========================================
-
-// whether we are quitting the application. no code should run after this.
-// set in exit() and abort()
 var ABORT = false;
 
-// set by exit() and abort().  Passed to 'onExit' handler.
-// NOTE: This is also used as the process return code in shell environments
-// but only when noExitRuntime is false.
+
 var EXITSTATUS;
 
-// In STRICT mode, we only define assert() when ASSERTIONS is set.  i.e. we
-// don't define it at all in release modes.  This matches the behaviour of
-// MINIMAL_RUNTIME.
-// TODO(sbc): Make this the default even without STRICT enabled.
 /** @type {function(*, string=)} */
 function assert(condition, text) {
   if (!condition) {
     abort('Assertion failed' + (text ? ': ' + text : ''));
   }
 }
-
-// We used to include malloc/free by default in the past. Show a helpful error in
-// builds with assertions.
+// wowwwwwwwwwwwwwwwwwwwwwwwwwwwww
 
 /**
  * Indicates whether filename is delivered via file protocol (as opposed to http/https)
@@ -286,21 +225,15 @@ function assert(condition, text) {
  */
 var isFileURI = (filename) => filename.startsWith('file://');
 
-// include: runtime_common.js
-// include: runtime_stack_check.js
-// Initializes the stack cookie. Called at the startup of main and at the startup of each thread in pthreads mode.
+
 function writeStackCookie() {
   var max = _emscripten_stack_get_end();
   assert((max & 3) == 0);
-  // If the stack ends at address zero we write our cookies 4 bytes into the
-  // stack.  This prevents interference with SAFE_HEAP and ASAN which also
-  // monitor writes to address zero.
+  
   if (max == 0) {
     max += 4;
   }
-  // The stack grow downwards towards _emscripten_stack_get_end.
-  // We write cookies to the final two words in the stack and detect if they are
-  // ever overwritten.
+  
   HEAPU32[((max)>>2)] = 0x02135467;
   HEAPU32[(((max)+(4))>>2)] = 0x89BACDFE;
   // Also test the global address 0 for integrity.
@@ -324,10 +257,7 @@ function checkStackCookie() {
     abort('Runtime error: The application has corrupted its heap memory area (address zero)!');
   }
 }
-// end include: runtime_stack_check.js
-// include: runtime_exceptions.js
-// end include: runtime_exceptions.js
-// include: runtime_debug.js
+
 var runtimeDebug = true; // Switch to false at runtime to disable logging at the right times
 
 // Used by XXXXX_DEBUG settings to output debug messages.
@@ -377,7 +307,7 @@ function isExportedByForceFilesystem(name) {
          name === 'FS_preloadFile' ||
          name === 'FS_unlink' ||
          name === 'addRunDependency' ||
-         // The old FS has some functionality that WasmFS lacks.
+         
          name === 'FS_createLazyFile' ||
          name === 'FS_createDevice' ||
          name === 'removeRunDependency';
@@ -385,8 +315,7 @@ function isExportedByForceFilesystem(name) {
 
 function missingLibrarySymbol(sym) {
 
-  // Any symbol that is not included from the JS library is also (by definition)
-  // not exported on the Module object.
+  
   unexportedRuntimeSymbol(sym);
 }
 
@@ -427,7 +356,7 @@ var
 /** @type {!Float64Array} */
   HEAPF64;
 
-// BigInt64Array type is not correctly defined in closure
+
 var
 /** not-@type {!BigInt64Array} */
   HEAP64,
@@ -496,10 +425,8 @@ function postRun() {
     }
   }
   consumedModuleProp('postRun');
-
-  // Begin ATPOSTRUNS hooks
   callRuntimeCallbacks(onPostRuns);
-  // End ATPOSTRUNS hooks
+ 
 }
 
 /** @param {string|number=} what */
@@ -507,35 +434,19 @@ function abort(what) {
   Module['onAbort']?.(what);
 
   what = 'Aborted(' + what + ')';
-  // TODO(sbc): Should we remove printing and leave it up to whoever
-  // catches the exception?
+  
   err(what);
 
   ABORT = true;
 
-  // Use a wasm runtime error, because a JS error might be seen as a foreign
-  // exception, which means we'd run destructors on it. We need the error to
-  // simply make the program stop.
-  // FIXME This approach does not work in Wasm EH because it currently does not assume
-  // all RuntimeErrors are from traps; it decides whether a RuntimeError is from
-  // a trap or not based on a hidden field within the object. So at the moment
-  // we don't have a way of throwing a wasm trap from JS. TODO Make a JS API that
-  // allows this in the wasm spec.
-
-  // Suppress closure compiler warning here. Closure compiler's builtin extern
-  // definition for WebAssembly.RuntimeError claims it takes no arguments even
-  // though it can.
-  // TODO(https://github.com/google/closure-compiler/pull/3913): Remove if/when upstream closure gets fixed.
   /** @suppress {checkTypes} */
   var e = new WebAssembly.RuntimeError(what);
 
   readyPromiseReject?.(e);
-  // Throw the error whether or not MODULARIZE is set because abort is used
-  // in code paths apart from instantiation where an exception is expected
-  // to be thrown when abort is called.
+  
   throw e;
 }
-
+var hello ="";
 // show errors on likely calls to FS when it was not included
 var FS = {
   error() {
@@ -585,8 +496,7 @@ function getBinarySync(file) {
   if (readBinary) {
     return readBinary(file);
   }
-  // Throwing a plain string here, even though it not normally advisable since
-  // this gets turning into an `abort` in instantiateArrayBuffer.
+  
   throw 'both async and sync fetching of the wasm failed';
 }
 
@@ -624,14 +534,9 @@ async function instantiateArrayBuffer(binaryFile, imports) {
 
 async function instantiateAsync(binary, binaryFile, imports) {
   if (!binary
-      // Don't use streaming for file:// delivered objects in a webview, fetch them synchronously.
+      
       && !isFileURI(binaryFile)
-      // Avoid instantiateStreaming() on Node.js environment for now, as while
-      // Node.js v18.1.0 implements it, it does not have a full fetch()
-      // implementation yet.
-      //
-      // Reference:
-      //   https://github.com/emscripten-core/emscripten/pull/16917
+      
       && !ENVIRONMENT_IS_NODE
      ) {
     try {
@@ -639,18 +544,17 @@ async function instantiateAsync(binary, binaryFile, imports) {
       var instantiationResult = await WebAssembly.instantiateStreaming(response, imports);
       return instantiationResult;
     } catch (reason) {
-      // We expect the most common failure cause to be a bad MIME type for the binary,
-      // in which case falling back to ArrayBuffer instantiation should work.
+     
       err(`wasm streaming compile failed: ${reason}`);
       err('falling back to ArrayBuffer instantiation');
-      // fall back of instantiateArrayBuffer below
+     
     };
   }
   return instantiateArrayBuffer(binaryFile, imports);
 }
 
 function getWasmImports() {
-  // prepare imports
+
   var imports = {
     'env': wasmImports,
     'wasi_snapshot_preview1': wasmImports,
@@ -658,12 +562,8 @@ function getWasmImports() {
   return imports;
 }
 
-// Create the wasm instance.
-// Receives the wasm imports, returns the exports.
 async function createWasm() {
-  // Load the wasm module and create an instance of using native support in the JS engine.
-  // handle a generated wasm instance, receiving its exports and
-  // performing other necessary setup
+ 
   /** @param {WebAssembly.Module=} module*/
   function receiveInstance(instance, module) {
     wasmExports = instance.exports;
@@ -675,29 +575,19 @@ async function createWasm() {
     return wasmExports;
   }
 
-  // Prefer streaming instantiation if available.
-  // Async compilation can be confusing when an error on the page overwrites Module
-  // (for example, if the order of elements is wrong, and the one defining Module is
-  // later), so we save Module and check it later.
+ 
   var trueModule = Module;
   function receiveInstantiationResult(result) {
-    // 'result' is a ResultObject object which has both the module and instance.
-    // receiveInstance() will swap in the exports (to Module.asm) so they can be called
+    
     assert(Module === trueModule, 'the Module object should not be replaced during async compilation - perhaps the order of HTML elements is wrong?');
     trueModule = null;
-    // TODO: Due to Closure regression https://github.com/google/closure-compiler/issues/3193, the above line no longer optimizes out down to the following line.
-    // When the regression is fixed, can restore the above PTHREADS-enabled path.
+    
     return receiveInstance(result['instance']);
   }
 
   var info = getWasmImports();
 
-  // User shell pages can write their own Module.instantiateWasm = function(imports, successCallback) callback
-  // to manually instantiate the Wasm module themselves. This allows pages to
-  // run the instantiation parallel to any other async startup actions they are
-  // performing.
-  // Also pthreads and wasm workers initialize the wasm instance through this
-  // path.
+  
   if (Module['instantiateWasm']) {
     return new Promise((resolve, reject) => {
       try {
@@ -1253,8 +1143,7 @@ async function createWasm() {
           registeredInstance.$$.smartPtr = ptr;
           return registeredInstance['clone']();
         } else {
-          // else, just increment reference count on existing object
-          // it already has a reference to the smart pointer
+          
           var rv = registeredInstance['clone']();
           this.destructor(ptr);
           return rv;
@@ -1315,10 +1204,8 @@ async function createWasm() {
         attachFinalizer = (handle) => handle;
         return handle;
       }
-      // If the running environment has a FinalizationRegistry (see
-      // https://github.com/tc39/proposal-weakrefs), then attach finalizers
-      // for class handles.  We check for the presence of FinalizationRegistry
-      // at run-time, not build-time.
+      
+      
       finalizationRegistry = new FinalizationRegistry((info) => {
         console.warn(info.leakWarning);
         releaseClassHandle(info.$$);
@@ -1327,12 +1214,9 @@ async function createWasm() {
         var $$ = handle.$$;
         var hasSmartPtr = !!$$.smartPtr;
         if (hasSmartPtr) {
-          // We should not call the destructor on raw pointers in case other code expects the pointee to live
+          
           var info = { $$: $$ };
-          // Create a warning as an Error instance in advance so that we can store
-          // the current stacktrace and point to it when / if a leak is detected.
-          // This is more useful than the empty stacktrace of `FinalizationRegistry`
-          // callback.
+         
           var cls = $$.ptrType.registeredClass;
           var err = new Error(`Embind found a leaked C++ instance ${cls.name} <${ptrToString($$.ptr)}>.\n` +
           "We'll free it automatically in this case, but this functionality is not reliable across various environments.\n" +
@@ -1453,7 +1337,7 @@ async function createWasm() {
         },
       });
   
-      // Support `using ...` from https://github.com/tc39/proposal-explicit-resource-management.
+      
       const symbolDispose = Symbol.dispose;
       if (symbolDispose) {
         proto[symbolDispose] = proto['delete'];
@@ -1603,15 +1487,13 @@ async function createWasm() {
       ptr = upcastPointer(handle.$$.ptr, handleClass, this.registeredClass);
   
       if (this.isSmartPointer) {
-        // TODO: this is not strictly true
-        // We could support BY_EMVAL conversions from raw pointers to smart pointers
-        // because the smart pointer can hold a reference to the handle
+        
         if (undefined === handle.$$.smartPtr) {
           throwBindingError('Passing raw pointer to smart pointer is illegal');
         }
   
         switch (this.sharingPolicy) {
-          case 0: // NONE
+          case 0: 
             // no upcasting
             if (handle.$$.smartPtrType === this) {
               ptr = handle.$$.smartPtr;
@@ -1735,10 +1617,7 @@ async function createWasm() {
         }
       } else {
         this.toWireType = genericPointerToWireType;
-        // Here we must leave this.destructorFunction undefined, since whether genericPointerToWireType returns
-        // a pointer that needs to be freed up is runtime-dependent, and cannot be evaluated at registration time.
-        // TODO: Create an alternative mechanism that allows removing the use of var destructors = []; array in
-        //       craftInvokerFunction altogether.
+        
       }
     }
   
@@ -2038,15 +1917,7 @@ async function createWasm() {
     }
   
   function craftInvokerFunction(humanName, argTypes, classType, cppInvokerFunc, cppTargetFunc, /** boolean= */ isAsync) {
-      // humanName: a human-readable string name for the function to be generated.
-      // argTypes: An array that contains the embind type objects for all types in the function signature.
-      //    argTypes[0] is the type object for the function return value.
-      //    argTypes[1] is the type object for function this object/class type, or null if not crafting an invoker for a class method.
-      //    argTypes[2...] are the actual function parameters.
-      // classType: The embind type object for the class to be bound, or null if this is not a method of a class.
-      // cppInvokerFunc: JS Function object to the C++-side function that interops into C++ code.
-      // cppTargetFunc: Function pointer (an integer to FUNCTION_TABLE) to the target C++ function the cppInvokerFunc will end up calling.
-      // isAsync: Optional. If true, returns an async function. Async bindings are only supported with JSPI.
+     
       var argCount = argTypes.length;
   
       if (argCount < 2) {
@@ -2056,14 +1927,7 @@ async function createWasm() {
       assert(!isAsync, 'Async bindings are only supported with JSPI.');
       var isClassMethodFunc = (argTypes[1] !== null && classType !== null);
   
-      // Free functions with signature "void function()" do not need an invoker that marshalls between wire types.
-      // TODO: This omits argument count check - enable only at -O3 or similar.
-      //    if (ENABLE_UNSAFE_OPTS && argCount == 2 && argTypes[0].name == "void" && !isClassMethodFunc) {
-      //       return FUNCTION_TABLE[fn];
-      //    }
-  
-      // Determine if we need to use a dynamic stack to store the destructors for the function parameters.
-      // TODO: Remove this completely once all function invokers are being dynamically generated.
+    
       var needsDestructorStack = usesDestructorStack(argTypes);
   
       var returns = !argTypes[0].isVoid;
@@ -2230,7 +2094,7 @@ async function createWasm() {
         if (!handle) {
             throwBindingError(`Cannot use deleted val. handle = ${handle}`);
         }
-        // handle 2 is supposed to be `undefined`.
+        
         assert(handle === 2 || emval_handles[handle] !== undefined && handle % 2 === 0, `invalid handle: ${handle}`);
         return emval_handles[handle];
       },
@@ -2290,8 +2154,7 @@ async function createWasm() {
           if (typeof value != "number" && typeof value != "boolean") {
             throw new TypeError(`Cannot convert ${embindRepr(value)} to ${this.name}`);
           }
-          // The VM will perform JS to Wasm value conversion, according to the spec:
-          // https://www.w3.org/TR/wasm-js-api-1/#towebassemblyvalue
+         
           return value;
         },
         readValueFromPointer: floatReadValueFromPointer(name, size),
@@ -2324,8 +2187,7 @@ async function createWasm() {
             throw new TypeError(`Cannot convert "${embindRepr(value)}" to ${name}`);
           }
           assertIntegerRange(name, value, minRange, maxRange);
-          // The VM will perform JS to Wasm value conversion, according to the spec:
-          // https://www.w3.org/TR/wasm-js-api-1/#towebassemblyvalue
+          
           return value;
         },
         readValueFromPointer: integerReadValueFromPointer(name, size, minRange !== 0),
@@ -2489,20 +2351,13 @@ async function createWasm() {
   var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
       var maxIdx = idx + maxBytesToRead;
       if (ignoreNul) return maxIdx;
-      // TextDecoder needs to know the byte length in advance, it doesn't stop on
-      // null terminator by itself.
-      // As a tiny code save trick, compare idx against maxIdx using a negation,
-      // so that maxBytesToRead=undefined/NaN means Infinity.
+     
       while (heapOrArray[idx] && !(idx >= maxIdx)) ++idx;
       return idx;
     };
   
   
     /**
-   * Given a pointer 'idx' to a null-terminated UTF8-encoded string in the given
-   * array that contains uint8 values, returns a copy of that string as a
-   * Javascript String object.
-   * heapOrArray is either a regular array, or a JavaScript typed array view.
    * @param {number=} idx
    * @param {number=} maxBytesToRead
    * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
@@ -2518,10 +2373,7 @@ async function createWasm() {
       }
       var str = '';
       while (idx < endPtr) {
-        // For UTF8 byte structure, see:
-        // http://en.wikipedia.org/wiki/UTF-8#Description
-        // https://www.ietf.org/rfc/rfc2279.txt
-        // https://tools.ietf.org/html/rfc3629
+        
         var u0 = heapOrArray[idx++];
         if (!(u0 & 0x80)) { str += String.fromCharCode(u0); continue; }
         var u1 = heapOrArray[idx++] & 63;
@@ -2655,13 +2507,10 @@ async function createWasm() {
       // Fallback: decode without UTF16Decoder
       var str = '';
   
-      // If maxBytesToRead is not passed explicitly, it will be undefined, and the
-      // for-loop's condition will always evaluate to true. The loop is then
-      // terminated on the first null char.
+      
       for (var i = idx; i < endIdx; ++i) {
         var codeUnit = HEAPU16[i];
-        // fromCharCode constructs a character from a UTF-16 code unit, so we can
-        // pass the UTF16 string right through.
+       
         str += String.fromCharCode(codeUnit);
       }
   
@@ -2678,7 +2527,7 @@ async function createWasm() {
       var startPtr = outPtr;
       var numCharsToWrite = (maxBytesToWrite < str.length*2) ? (maxBytesToWrite / 2) : str.length;
       for (var i = 0; i < numCharsToWrite; ++i) {
-        // charCodeAt returns a UTF-16 encoded code unit, so it can be directly written to the HEAP.
+        
         var codeUnit = str.charCodeAt(i); // possibly a lead surrogate
         HEAP16[((outPtr)>>1)] = codeUnit;
         outPtr += 2;
