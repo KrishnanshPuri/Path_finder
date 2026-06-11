@@ -1917,15 +1917,7 @@ async function createWasm() {
     }
   
   function craftInvokerFunction(humanName, argTypes, classType, cppInvokerFunc, cppTargetFunc, /** boolean= */ isAsync) {
-      // humanName: a human-readable string name for the function to be generated.
-      // argTypes: An array that contains the embind type objects for all types in the function signature.
-      //    argTypes[0] is the type object for the function return value.
-      //    argTypes[1] is the type object for function this object/class type, or null if not crafting an invoker for a class method.
-      //    argTypes[2...] are the actual function parameters.
-      // classType: The embind type object for the class to be bound, or null if this is not a method of a class.
-      // cppInvokerFunc: JS Function object to the C++-side function that interops into C++ code.
-      // cppTargetFunc: Function pointer (an integer to FUNCTION_TABLE) to the target C++ function the cppInvokerFunc will end up calling.
-      // isAsync: Optional. If true, returns an async function. Async bindings are only supported with JSPI.
+     
       var argCount = argTypes.length;
   
       if (argCount < 2) {
@@ -1935,14 +1927,7 @@ async function createWasm() {
       assert(!isAsync, 'Async bindings are only supported with JSPI.');
       var isClassMethodFunc = (argTypes[1] !== null && classType !== null);
   
-      // Free functions with signature "void function()" do not need an invoker that marshalls between wire types.
-      // TODO: This omits argument count check - enable only at -O3 or similar.
-      //    if (ENABLE_UNSAFE_OPTS && argCount == 2 && argTypes[0].name == "void" && !isClassMethodFunc) {
-      //       return FUNCTION_TABLE[fn];
-      //    }
-  
-      // Determine if we need to use a dynamic stack to store the destructors for the function parameters.
-      // TODO: Remove this completely once all function invokers are being dynamically generated.
+    
       var needsDestructorStack = usesDestructorStack(argTypes);
   
       var returns = !argTypes[0].isVoid;
