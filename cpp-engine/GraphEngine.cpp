@@ -20,14 +20,14 @@ struct SimResult {
 class Graph {
     unordered_map<int, vector<pair<int, int>>> adj;
     int V = 0; 
-    set<int> allNodes; // Perfect for counting total unique nodes accurately
+    set<int> allNodes; 
 
 public:
     void addEdge(int u, int v, int weight) {
         adj[u].push_back({v, weight});
         V = max({V, u + 1, v + 1}); 
-        allNodes.insert(u); // Track source
-        allNodes.insert(v); // Track destination
+        allNodes.insert(u); 
+        allNodes.insert(v); 
     }
 
     void deleteNode(int node) {
@@ -109,7 +109,7 @@ public:
         int cost = (dist[end] == 1e9) ? -1 : dist[end];
         return {path, cost, "SUCCESS", ""};
     }
-// Add this helper function right above your floydWarshall function
+
     string pad(string s, int width = 7) {
         if (s.length() < width) return s + string(width - s.length(), ' ');
         return s;
@@ -144,7 +144,6 @@ public:
             }
         }
 
-        // --- THE NEW PERFECTLY ALIGNED MATRIX FORMATTER ---
         vector<int> activeNodes(allNodes.begin(), allNodes.end());
         string matrixStr = "      | ";
         for(int node : activeNodes) matrixStr += pad(to_string(node));
